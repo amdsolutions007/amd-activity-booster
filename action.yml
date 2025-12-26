@@ -1,0 +1,44 @@
+name: 'AMD Activity Booster'
+description: 'Automatically update your repository with daily activity logs and AI-generated quotes to keep your GitHub contribution graph active'
+author: 'amdsolutions007'
+
+branding:
+  icon: 'zap'
+  color: 'orange'
+
+inputs:
+  github_token:
+    description: 'GitHub Token for committing changes'
+    required: true
+  activity_file:
+    description: 'File to update with activity logs'
+    required: false
+    default: 'activity_log.md'
+  commit_message:
+    description: 'Custom commit message'
+    required: false
+    default: '🤖 Daily Activity Update'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Generate Activity Log
+      shell: bash
+      run: python ${{ github.action_path }}/main.py
+      env:
+        ACTIVITY_FILE: ${{ inputs.activity_file }}
+    
+    - name: Commit and Push
+      shell: bash
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "AMD Activity Bot"
+        git add ${{ inputs.activity_file }}
+        git diff --quiet && git diff --staged --quiet || \
+          (git commit -m "${{ inputs.commit_message }}: $(date -u +%Y-%m-%d)" && \
+           git push https://x-access-token:${{ inputs.github_token }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }})
